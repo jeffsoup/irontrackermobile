@@ -5,11 +5,29 @@ import Constants from 'expo-constants';
 let client: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient {
-  const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string | undefined;
-  const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined;
+  // Try multiple ways to get the config (for compatibility with Expo Go and development builds)
+  const supabaseUrl =
+    (Constants.expoConfig?.extra?.supabaseUrl as string | undefined) ||
+    (Constants.manifest?.extra?.supabaseUrl as string | undefined) ||
+    (process.env.EXPO_PUBLIC_SUPABASE_URL as string | undefined);
+
+  const supabaseAnonKey =
+    (Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined) ||
+    (Constants.manifest?.extra?.supabaseAnonKey as string | undefined) ||
+    (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string | undefined);
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
+    console.error('Supabase configuration missing:', {
+      supabaseUrl: supabaseUrl ? 'present' : 'missing',
+      supabaseAnonKey: supabaseAnonKey ? 'present' : 'missing',
+      expoConfig: Constants.expoConfig ? 'present' : 'missing',
+      manifest: Constants.manifest ? 'present' : 'missing',
+      expoConfigExtra: Constants.expoConfig?.extra,
+      manifestExtra: Constants.manifest?.extra,
+    });
+    throw new Error(
+      'Missing Supabase environment variables. Please ensure your .env file contains EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, and restart the Expo dev server.'
+    );
   }
 
   if (!client) {
